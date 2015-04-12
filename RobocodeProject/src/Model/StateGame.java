@@ -1,5 +1,7 @@
 package Model;
 
+import java.util.ArrayList;
+
 /**
  * 
  * the state of the game, consisting of the data 
@@ -10,6 +12,19 @@ package Model;
 public class StateGame {
 
 	
-	BotData m_myBot;
+	/**
+	 * the data about my bot : heading, speed, radar position
+	 */
+	MyBot m_bot;
+	
+	/**
+	 * the data about my enemies
+	 */
+	ArrayList<EnemyBot> m_enemies;
+	
+	/**
+	 * the current enemy we are tracking
+	 */
+	EnemyBot m_currentEnemy;
 	
 }
