@@ -24,6 +24,10 @@ public class EnemyBot extends Bot{
 		m_name = _name;
 	}
 
+	public EnemyBot() {
+		// TODO Auto-generated constructor stub
+	}
+
 	public String getM_name() {
 		return m_name;
 	}
@@ -58,7 +62,6 @@ public class EnemyBot extends Bot{
 	public void update(ScannedRobotEvent e) {
 		
 		
-		m_name = e.getName();
 		
 	}
 	

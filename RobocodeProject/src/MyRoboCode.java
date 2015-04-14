@@ -1,15 +1,22 @@
 
+import java.awt.Point;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import Core.Core;
+import Model.DataPoint;
 import Model.EnemyBot;
 import Model.MyBot;
 import robocode.AdvancedRobot;
 import robocode.GunTurnCompleteCondition;
 import robocode.RobotDeathEvent;
+import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-
-
+import Model.WaveBullet;
+import Targeting.KNN;
 
 /**
  * main class that deals with events, calls 
@@ -19,27 +26,39 @@ import robocode.util.Utils;
  */
 public class MyRoboCode extends AdvancedRobot{
 	
-	/**
-	 * the data about my bot : heading, speed, radar position
-	 */
-	MyBot m_bot;
+	
+	//List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	
+	
+
+	
 	
 	/**
-	 * the data about my enemies
+	 * contains public static values used in algorithms, etc
 	 */
-	HashMap<String,EnemyBot> m_enemies;
+	Core m_core;
 	
 	/**
-	 * the current enemy we are tracking
+	 * the algorithm to detect the most similar situations
 	 */
-	EnemyBot m_currentEnemy;
+	KNN m_kNearestNeigh;
+	
+	
+	/**
+	 * there are 31 segments where the guess factor angle can be categorized
+	 */
+	//int[][] stats = new int[5][31]; // onScannedRobot can scan up to 1200px, so there are only 13.
+	static int[] stats = new int[31]; // 31 is the number of unique GuessFactors we're using
+	  // Note: this must be odd number so we can get
+	  // GuessFactor 0 at middle.
+	int m_direction = 1;
 	
 	public void run() {
 		
-	//	initData();
+		initData();
+		initConstantsAboutGame();
 		
 		
-	//	turnRadarRight(Double.POSITIVE_INFINITY);
 		while (true) {
 			turnRadarRight(Double.POSITIVE_INFINITY);
 		}
@@ -48,242 +67,220 @@ public class MyRoboCode extends AdvancedRobot{
 	
 	
 	/**
+	 * determine the constants about the game
+	 * <br> used to normalize the data gotten from scanning
+	 */
+	public void initConstantsAboutGame() 
+	{
+		Core.m_Maxheading = (2 * Math.PI);
+		Core.m_MaxWidth = getBattleFieldWidth();
+		Core.m_MaxHeight = getBattleFieldHeight();
+		Core.m_MaxSpeed = Rules.MAX_VELOCITY;
+		
+	}
+
+
+	/**
 	 * initialize data about the BOTS and the state of my own BOT
 	 */
 	public void initData()
-	{
-		m_enemies = new HashMap<String,EnemyBot>();
-		
+	{	
 		setAdjustRadarForRobotTurn(true);
-	//	setAdjustGunForRobotTurn(true);
-	//	setAdjustRadarForGunTurn(true);
+		setAdjustGunForRobotTurn(true);
+		setAdjustRadarForGunTurn(true);
+		m_core = new Core();
 	}
-	/*
+
 	public void onScannedRobot(ScannedRobotEvent e) {
-		
-		// Lock on to our target (this time for sure)
-		//System.out.println("Values : " + e.getBearing() + " " + getHeading() + " " +  getRadarHeading());
-		//setTurnRadarRight( 2*(getHeading() - getRadarHeading() + e.getBearing()));
-		
-		//checkNewBotAdded(e);
+	   
 	//	updateMainEnemy(e);
-		
-		
-		
-	}
-	*/
-	public void onScannedRobot(ScannedRobotEvent e) {
-	   
+	//	checkNewBotAdded(e);
 	  
-		receiveRadarData(e);
-		detectStateFromHistory();
-	    takeDecision(e);
+	//	receiveRadarData(e);
+		//detectStateFromHistory();
+	//    takeDecision(e);
+		
+		//updateMainEnemy(e);
+		
+		
+		
+		// this is used with guess factor, in case the 
+		// bot is moving randomly
+		// waveCode(e);
+		
+		waveCode(e);
+		
+		robotRadarDecision(e);
+
 	}
 
 
 
 	/**
-	 * receiving data about the state of the game
-	 * @param e : the data about the robot detected
+	 * takes a decision for the radar, so it will have a lock on the robot
+	 * @param e : data the robot detected
 	 */
-	public void receiveRadarData(ScannedRobotEvent e) 
-	{
+	public void robotRadarDecision(ScannedRobotEvent e) {
 		
+		double radarTurn;
 		
-	}
-	private void detectStateFromHistory() 
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-
-	private void takeDecision(ScannedRobotEvent e) 
-	{
-		 double radarTurn =
-		    		getHeadingRadians() + e.getBearingRadians()
+		 radarTurn = getHeadingRadians() + e.getBearingRadians()
 		    		- getRadarHeadingRadians();
-		 
-		 double gunTurn = getHeadingRadians() + e.getBearingRadians() +
-				 	- getGunHeadingRadians();
-		 
-		    
-		 setTurnRadarRightRadians(2 * Utils.normalRelativeAngle(radarTurn));
-	
-		 
-		 setTurnGunRightRadians( Utils.normalRelativeAngle(gunTurn));
-		 fire(4);
-	//	 setTurnGunRight(360);
-	}
-
-
-	private void updateMainEnemy(ScannedRobotEvent e) {
-		if (m_currentEnemy.none() || e.getName().equals(m_currentEnemy.getM_name())) {
-			m_currentEnemy.update(e);
-		}
+		 setTurnRadarRightRadians(2* Utils.normalRelativeAngle(radarTurn));
+		
 		
 	}
+	
+	/**
+	 * checks if the waves created previously have hit the target
+	 * 
+	 * @param e : data about the robot detected
+	 */
+	public void waveCode(ScannedRobotEvent e)
+	{
+		double absBearing = getHeadingRadians() + e.getBearingRadians();
+		 
+		// find our enemy's location:
+		double ex = getX() + Math.sin(absBearing) * e.getDistance();
+		double ey = getY() + Math.cos(absBearing) * e.getDistance();
+		ArrayList<WaveBullet> deleteWaves = new ArrayList<WaveBullet>();
+		
+		DataPoint currentSituation = new DataPoint
+				(Math.sin(absBearing) * e.getDistance(),
+				 Math.cos(absBearing) * e.getDistance(),
+				 e.getVelocity(), 
+				 Utils.normalAbsoluteAngle(e.getHeadingRadians() - absBearing)
+				 );
+		
+		// take each wave created
+		// if the wave has over passed the enemy => it has not hit him
+		// => we can remove him
+		
+	//	System.out.println("Numarul de valuri : " + m_waves.keySet().size());
+		
+		// not sure if I have implemented correctly the removing of the waves that over passed the enemy
+		for (WaveBullet wave : Core.m_waves.keySet())
+		{
+			Double guessFactor = wave.checkHit(ex, ey, getTime());
+		
+			
+			if(guessFactor != null)
+			{
+				m_guessFactors.put(currentSituation, guessFactor);
+				System.out.println("GuesFactor : " + guessFactor);
+				deleteWaves.add(wave);
+				//m_waves.remove(wave);
+			}	
+		}
+	//	System.out.println("Numarul de valuri de sters : " + deleteWaves.size());
+		for(int i = 0; i < deleteWaves.size(); i++)
+			m_waves.remove(deleteWaves.get(i));
+		
+		
+		double power = Math.min(400 / e.getDistance(), 3);
+		// don't try to figure out the direction they're moving , meaning detect the sens, not the heading
+		// if they're not moving, just use the direction we had before
+		if (e.getVelocity() != 0)
+		{
+			if (Math.sin(e.getHeadingRadians()-absBearing)*e.getVelocity() < 0)
+				m_direction = -1;
+			else
+				m_direction = 1;
+		}
+		
+		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power,
+                m_direction, getTime());
+		
+		m_waves.put(newWave, currentSituation);
+		
+		m_kNearestNeigh.
+		
+		
+		
+		//if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
+	    //{
+	    //	   m_waves.add(newWave);
+	    //	   fire(power);
+	     //}
+		
+	}
+	
 
 
 	/**
-	 * @param e : event regarding an enemy scanned
+	 * @param e
 	 */
-	public void checkNewBotAdded(ScannedRobotEvent e)
-	{
-		EnemyBot bot = new EnemyBot(e.getName());
+/*	public void waveCode(ScannedRobotEvent e) {
 		
-		
-		if(m_enemies.containsKey(e.getName()) == false)
-		{	
-			m_enemies.put(e.getName(), bot);
-		}
-	}
-	
-	
-	public void onRobotDeath(RobotDeathEvent e) {
-		if (e.getName().equals(m_currentEnemy.getM_name())) {
-			m_currentEnemy.reset();
-		}
-	}
 
-	
-	
-	
 		
-	
-	
-	/*
-	 * it just rotates, the advantage is that is sees all his enemies
-	 * I don't understand why it is in a do while, since it rotates without stopping 
-	 * (non-Javadoc)
-	 * @see robocode.Robot#run()
-	 */
-	/*
-	public void run() {
+		// ...
+	    // (other onScannedRobot code, might be radar/movement)
+		// ...
+		 
+		// Enemy absolute bearing, you can use your one if you already declare it.
+		double absBearing = getHeadingRadians() + e.getBearingRadians();
+		 
+		// find our enemy's location:
+		double ex = getX() + Math.sin(absBearing) * e.getDistance();
+		double ey = getY() + Math.cos(absBearing) * e.getDistance();
+		 
+		// Let's process the waves now:
+		for (int i=0; i < m_waves.size(); i++)
+		{
+			WaveBullet currentWave = (WaveBullet)m_waves.get(i);
+			// if the wave has over passed the enemy => it has not hit him
+			// we can remove him
+			if (currentWave.checkHit(ex, ey, getTime()))
+			{
+				m_waves.remove(currentWave);
+				i--;
+			}
+		}
+		double power = Math.min(400 / e.getDistance(), 3);
+		// don't try to figure out the direction they're moving , meaning detect the sens, not the heading
+		// if they're not moving, just use the direction we had before
+		if (e.getVelocity() != 0)
+		{
+			if (Math.sin(e.getHeadingRadians()-absBearing)*e.getVelocity() < 0)
+				direction = -1;
+			else
+				direction = 1;
+		}
+	//	int[] currentStats = stats[(int)(e.getDistance() / 100)]; // It doesn't look silly now!
+		int[] currentStats = stats; // This seems silly, but I'm using it to
+							    // show something else later
+		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power,
+		                        direction, getTime(), currentStats);		
 		
+		// detecting the segment where the enemy has been most of the time
+		int bestindex = 15;	// initialize it to be in the middle, guessfactor 0.
+		for (int i=0; i<31; i++)
+			if (currentStats[bestindex] < currentStats[i])
+				bestindex = i;
+ 
+		// this should do the opposite of the math in the WaveBullet:
+		double guessfactor = (double)(bestindex - (stats.length - 1) / 2)
+                        / ((stats.length - 1) / 2);
+		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
+                double gunAdjust = Utils.normalRelativeAngle(
+                        absBearing - getGunHeadingRadians() + angleOffset);
+                setTurnGunRightRadians(gunAdjust);
+                
+       // ???     
+       if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
+       {
+    	   m_waves.add(newWave);
+    	   fire(power);
+       }
+       
+		double radarTurn;
 		
-		// this while doesn't make sense
-		// it spins like forever
-		while(true) {
-			System.out.println("before turn");
-	        turnRadarRightRadians(Double.POSITIVE_INFINITY);
-	        System.out.println("after turn");
-	    }
-	   
+		 radarTurn = getHeadingRadians() + e.getBearingRadians()
+		    		- getRadarHeadingRadians();
+		 setTurnRadarRightRadians(2* Utils.normalRelativeAngle(radarTurn));
 	}
-	*/
-	 
-	
-	/*
-	 * 
-	 * (non-Javadoc)
-	 * @see robocode.Robot#run()
-	 */
-/*	public void run() {
-	    // one rotate is needed to find the enemy
-		// after that, the movement is executed in onScannedRobot
-	    turnRadarRightRadians(Double.POSITIVE_INFINITY);
-	}
-*/	 
-	/*
-	public void onScannedRobot(ScannedRobotEvent e) {
-	    //
-	    // - the code below is in a loop since the radar locks the 
-	    // tank enemy
-	    // - once the enemy is out of the lock, on ScannedRobot is not executed anymore
-	    // when the enemy is out of the lock,  setTurnRadarLeftRadians makes sure the 
-	    // radar still moves
-	    //
-		double remaningRadius = getRadarTurnRemainingRadians();
-	    setTurnRadarLeftRadians(getRadarTurnRemainingRadians());
-	    System.out.println("numarul de remaing radius este : " + remaningRadius);
-	}
-	
-	*/
-	
-	/*
-	public void run() {
-	 
-		//
-		// again full rotation searching is enough to
-		// find the enemy 
-		 //
-	    turnRadarRightRadians(Double.POSITIVE_INFINITY);
-	    do {
-	        // Check for new targets.
-	        // Only necessary for Narrow Lock because sometimes our radar is already
-	        // pointed at the enemy and our onScannedRobot code doesn't end up telling
-	        // it to turn, so the system doesn't automatically call scan() for us
-	        // [see the javadocs for scan()].
-	        scan();
-	    } while (true);
-	    
-	}
-	*/
-	/*
-	public void onScannedRobot(ScannedRobotEvent e) {
-	    double radarTurn =
-	    		// Absolute bearing to target
-	    		// getHeadingRadians() : the direction of our heading relative to 0.0
-	    		// e.getBearingRadians() : the orientation of the enemy comparing to ours
-	    		// getRadarHeadingRadians() : our radar heading relative to 0.0
-	    		getHeadingRadians() + e.getBearingRadians()
-	    		// Subtract current radar heading to get turn required
-	    		- getRadarHeadingRadians();
-	 
-	    System.out.println("Valoarea cu care se roteste" + Utils.normalRelativeAngle(radarTurn));
-	    
-	    // the value of Utils.normalRelativeAngle(radarTurn) might be 0.0
-	    // thus, it will stop calling setTurnRadarRadians
-	    // and it will need to call scan() again to work
-	    
-	    // "scan for enemies if its radar is turning, which might not happen if you are 
-	    	//using a Narrow Lock and your enemy decides to stay still for 2 turns"
-	    // what happens if the enemy stays still for 2 turns ? => the value is 0 
-	    setTurnRadarRightRadians(2 * Utils.normalRelativeAngle(radarTurn));
-	  
-	}
-	*/
-	
-	
-	/*
-	 * something similar to narrow lock
-	public void run() {
-	    // ...
-	 
-	    do {
-	        // ...
-	        // Turn the radar if we have no more turn, starts it if it stops and at the start of round
-	        if ( getRadarTurnRemaining() == 0.0 )
-	            setTurnRadarRightRadians( Double.POSITIVE_INFINITY );
-	        execute();
-	    } while ( true );
-	 
-	    // ...
-	}
-	 
-	public void onScannedRobot(ScannedRobotEvent e) {
-	    // ...
-	 
-	    // Absolute angle towards target
-	    double angleToEnemy = getHeadingRadians() + e.getBearingRadians();
-	 
-	    // Subtract current radar heading to get the turn required to face the enemy, be sure it is normalized
-	    double radarTurn = Utils.normalRelativeAngle( angleToEnemy - getRadarHeadingRadians() );
-	 
-	    // Distance we want to scan from middle of enemy to either side
-	    // The 36.0 is how many units from the center of the enemy robot it scans.
-	    double extraTurn = Math.min( Math.atan( 36.0 / e.getDistance() ), Rules.RADAR_TURN_RATE_RADIANS );
-	 
-	    // Adjust the radar turn so it goes that much further in the direction it is going to turn
-	    // Basically if we were going to turn it left, turn it even more left, if right, turn more right.
-	    // This allows us to overshoot our enemy so that we get a good sweep that will not slip.
-	    radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-	 
-	    //Turn the radar
-	    setTurnRadarRightRadians(radarTurn);
-	 
-	    // ...
-	}
-	*/
+*/
+
+
 }
