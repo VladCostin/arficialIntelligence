@@ -1,6 +1,6 @@
 package Model;
 
-import Core.Core;
+import Core.CoreData;
 
 /**
  * the model used in dynamic clustering describing a firing situation
@@ -33,10 +33,58 @@ public class DataPoint
 	 */
 	public DataPoint(double _coordX, double _coordY, double _speed, double _heading)
 	{
-		m_heading = _heading / Core.m_Maxheading; 
-		m_coordX = _coordX / Core.m_MaxWidth;
-		m_coordY = _coordY / Core.m_MaxHeight;
-		m_speed = _speed / Core.m_MaxSpeed;
+		m_heading = _heading / CoreData.m_Maxheading; 
+		m_coordX = _coordX / CoreData.m_MaxWidth;
+		m_coordY = _coordY / CoreData.m_MaxHeight;
+		m_speed = _speed / CoreData.m_MaxSpeed;
+	}
+	/**
+	 * @return the m_heading
+	 */
+	public double getM_heading() {
+		return m_heading;
+	}
+	/**
+	 * @param m_heading the m_heading to set
+	 */
+	public void setM_heading(double m_heading) {
+		this.m_heading = m_heading;
+	}
+	/**
+	 * @return the m_coordX
+	 */
+	public double getM_coordX() {
+		return m_coordX;
+	}
+	/**
+	 * @param m_coordX the m_coordX to set
+	 */
+	public void setM_coordX(double m_coordX) {
+		this.m_coordX = m_coordX;
+	}
+	/**
+	 * @return the m_coordY
+	 */
+	public double getM_coordY() {
+		return m_coordY;
+	}
+	/**
+	 * @param m_coordY the m_coordY to set
+	 */
+	public void setM_coordY(double m_coordY) {
+		this.m_coordY = m_coordY;
+	}
+	/**
+	 * @return the m_speed
+	 */
+	public double getM_speed() {
+		return m_speed;
+	}
+	/**
+	 * @param m_speed the m_speed to set
+	 */
+	public void setM_speed(double m_speed) {
+		this.m_speed = m_speed;
 	}
 	
 }

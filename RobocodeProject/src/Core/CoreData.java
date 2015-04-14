@@ -10,7 +10,7 @@ import Model.WaveBullet;
  * @author Vlad Herescu
  *
  */
-public class Core {
+public class CoreData {
 
 	/**
 	 * the max speed of the BOT
@@ -36,19 +36,19 @@ public class Core {
 	 * the wave bullet instance to calculate when the wave has broken
 	 * and the state of the enemy associated
 	 */
-	public HashMap<WaveBullet,DataPoint> m_waves;
+	public static HashMap<WaveBullet,DataPoint> m_waves;
 	
 	
 	/**
 	 * the state of the enemy when fired
 	 * the collection history, but also the guessFactors associated, where we should have shot
 	 */
-	public HashMap<DataPoint,Double> m_guessFactors;
+	public static HashMap<DataPoint,Double> m_guessFactors;
 	
 	/**
 	 * 
 	 */
-	public Core()
+	public CoreData()
 	{
 		m_waves = new HashMap<WaveBullet,DataPoint>();
 		m_guessFactors = new HashMap<DataPoint, Double>();

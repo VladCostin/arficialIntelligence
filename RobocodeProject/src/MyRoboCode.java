@@ -5,13 +5,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import Core.Core;
+import Core.CoreData;
 import Model.DataPoint;
 import Model.EnemyBot;
 import Model.MyBot;
 import robocode.AdvancedRobot;
-import robocode.GunTurnCompleteCondition;
-import robocode.RobotDeathEvent;
+
+
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
@@ -36,7 +36,7 @@ public class MyRoboCode extends AdvancedRobot{
 	/**
 	 * contains public static values used in algorithms, etc
 	 */
-	Core m_core;
+	CoreData m_core;
 	
 	/**
 	 * the algorithm to detect the most similar situations
@@ -72,10 +72,10 @@ public class MyRoboCode extends AdvancedRobot{
 	 */
 	public void initConstantsAboutGame() 
 	{
-		Core.m_Maxheading = (2 * Math.PI);
-		Core.m_MaxWidth = getBattleFieldWidth();
-		Core.m_MaxHeight = getBattleFieldHeight();
-		Core.m_MaxSpeed = Rules.MAX_VELOCITY;
+		CoreData.m_Maxheading = (2 * Math.PI);
+		CoreData.m_MaxWidth = getBattleFieldWidth();
+		CoreData.m_MaxHeight = getBattleFieldHeight();
+		CoreData.m_MaxSpeed = Rules.MAX_VELOCITY;
 		
 	}
 
@@ -88,7 +88,8 @@ public class MyRoboCode extends AdvancedRobot{
 		setAdjustRadarForRobotTurn(true);
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		m_core = new Core();
+		m_core = new CoreData();
+		m_kNearestNeigh = new KNN();
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
@@ -159,22 +160,21 @@ public class MyRoboCode extends AdvancedRobot{
 	//	System.out.println("Numarul de valuri : " + m_waves.keySet().size());
 		
 		// not sure if I have implemented correctly the removing of the waves that over passed the enemy
-		for (WaveBullet wave : Core.m_waves.keySet())
+		for (WaveBullet wave : CoreData.m_waves.keySet())
 		{
 			Double guessFactor = wave.checkHit(ex, ey, getTime());
 		
-			
 			if(guessFactor != null)
 			{
-				m_guessFactors.put(currentSituation, guessFactor);
-				System.out.println("GuesFactor : " + guessFactor);
+				CoreData.m_guessFactors.put(CoreData.m_waves.get(wave), guessFactor); 
+ 				//System.out.println("GuesFactor : " + guessFactor);
 				deleteWaves.add(wave);
 				//m_waves.remove(wave);
 			}	
 		}
 	//	System.out.println("Numarul de valuri de sters : " + deleteWaves.size());
 		for(int i = 0; i < deleteWaves.size(); i++)
-			m_waves.remove(deleteWaves.get(i));
+			CoreData.m_waves.remove(deleteWaves.get(i));
 		
 		
 		double power = Math.min(400 / e.getDistance(), 3);
@@ -191,11 +191,25 @@ public class MyRoboCode extends AdvancedRobot{
 		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power,
                 m_direction, getTime());
 		
-		m_waves.put(newWave, currentSituation);
+		CoreData.m_waves.put(newWave, currentSituation);
 		
-		m_kNearestNeigh.
+		DataPoint point =  m_kNearestNeigh.getMostSimilarDataPoints(currentSituation);
 		
+		if(point != null)
+		{
 		
+			double guessFactor = CoreData.m_guessFactors.get(point);
+			System.out.println("FireGuesFactor" + guessFactor);
+			
+			double angleOffset = m_direction * guessFactor * newWave.maxEscapeAngle();
+            double gunAdjust = Utils.normalRelativeAngle(
+                    absBearing - getGunHeadingRadians() + angleOffset);
+            setTurnGunRightRadians(gunAdjust);
+            if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
+            {
+         	   fire(power);
+            }
+		}
 		
 		//if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
 	    //{
@@ -204,8 +218,33 @@ public class MyRoboCode extends AdvancedRobot{
 	     //}
 		
 	}
+	/*public void onRoundEnded(RoundEndedEvent event)
+	{
+		ArrayList<DataPoint> points = new ArrayList<DataPoint>();
+		
+		if( CoreData.m_guessFactors.size() > m_kNearestNeigh.getM_MaxSize())
+		{
+			
+			int i= 0;
+			for(DataPoint point : CoreData.m_guessFactors.keySet())
+			{
+				i++;
+				if(i > 2000)
+					break;
+				points.add(point);
+			}
+			
+			//	System.out.println("Numarul de valuri de sters : " + deleteWaves.size());
+			for( i = 0; i < points.size(); i++)
+				CoreData.m_guessFactors.remove(points.get(i));
+			
+			
+			
+		//	CoreData.m_guessFactors.remove(key)
+		}
+	}
 	
-
+	*/
 
 	/**
 	 * @param e
