@@ -1,14 +1,8 @@
 
-import java.awt.Point;
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import Core.CoreData;
 import Model.DataPoint;
-import Model.EnemyBot;
-import Model.MyBot;
 import robocode.AdvancedRobot;
 
 
@@ -25,13 +19,6 @@ import Targeting.KNN;
  *
  */
 public class MyRoboCode extends AdvancedRobot{
-	
-	
-	//List<WaveBullet> waves = new ArrayList<WaveBullet>();
-	
-	
-
-	
 	
 	/**
 	 * contains public static values used in algorithms, etc
@@ -94,23 +81,8 @@ public class MyRoboCode extends AdvancedRobot{
 
 	public void onScannedRobot(ScannedRobotEvent e) {
 	   
-	//	updateMainEnemy(e);
-	//	checkNewBotAdded(e);
-	  
-	//	receiveRadarData(e);
-		//detectStateFromHistory();
-	//    takeDecision(e);
-		
-		//updateMainEnemy(e);
-		
-		
-		
-		// this is used with guess factor, in case the 
-		// bot is moving randomly
-		// waveCode(e);
 		
 		waveCode(e);
-		
 		robotRadarDecision(e);
 
 	}
@@ -211,115 +183,11 @@ public class MyRoboCode extends AdvancedRobot{
             }
 		}
 		
-		//if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
-	    //{
-	    //	   m_waves.add(newWave);
-	    //	   fire(power);
-	     //}
 		
 	}
-	/*public void onRoundEnded(RoundEndedEvent event)
-	{
-		ArrayList<DataPoint> points = new ArrayList<DataPoint>();
-		
-		if( CoreData.m_guessFactors.size() > m_kNearestNeigh.getM_MaxSize())
-		{
-			
-			int i= 0;
-			for(DataPoint point : CoreData.m_guessFactors.keySet())
-			{
-				i++;
-				if(i > 2000)
-					break;
-				points.add(point);
-			}
-			
-			//	System.out.println("Numarul de valuri de sters : " + deleteWaves.size());
-			for( i = 0; i < points.size(); i++)
-				CoreData.m_guessFactors.remove(points.get(i));
-			
-			
-			
-		//	CoreData.m_guessFactors.remove(key)
-		}
-	}
-	
-	*/
 
-	/**
-	 * @param e
-	 */
-/*	public void waveCode(ScannedRobotEvent e) {
-		
 
-		
-		// ...
-	    // (other onScannedRobot code, might be radar/movement)
-		// ...
-		 
-		// Enemy absolute bearing, you can use your one if you already declare it.
-		double absBearing = getHeadingRadians() + e.getBearingRadians();
-		 
-		// find our enemy's location:
-		double ex = getX() + Math.sin(absBearing) * e.getDistance();
-		double ey = getY() + Math.cos(absBearing) * e.getDistance();
-		 
-		// Let's process the waves now:
-		for (int i=0; i < m_waves.size(); i++)
-		{
-			WaveBullet currentWave = (WaveBullet)m_waves.get(i);
-			// if the wave has over passed the enemy => it has not hit him
-			// we can remove him
-			if (currentWave.checkHit(ex, ey, getTime()))
-			{
-				m_waves.remove(currentWave);
-				i--;
-			}
-		}
-		double power = Math.min(400 / e.getDistance(), 3);
-		// don't try to figure out the direction they're moving , meaning detect the sens, not the heading
-		// if they're not moving, just use the direction we had before
-		if (e.getVelocity() != 0)
-		{
-			if (Math.sin(e.getHeadingRadians()-absBearing)*e.getVelocity() < 0)
-				direction = -1;
-			else
-				direction = 1;
-		}
-	//	int[] currentStats = stats[(int)(e.getDistance() / 100)]; // It doesn't look silly now!
-		int[] currentStats = stats; // This seems silly, but I'm using it to
-							    // show something else later
-		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power,
-		                        direction, getTime(), currentStats);		
-		
-		// detecting the segment where the enemy has been most of the time
-		int bestindex = 15;	// initialize it to be in the middle, guessfactor 0.
-		for (int i=0; i<31; i++)
-			if (currentStats[bestindex] < currentStats[i])
-				bestindex = i;
- 
-		// this should do the opposite of the math in the WaveBullet:
-		double guessfactor = (double)(bestindex - (stats.length - 1) / 2)
-                        / ((stats.length - 1) / 2);
-		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
-                double gunAdjust = Utils.normalRelativeAngle(
-                        absBearing - getGunHeadingRadians() + angleOffset);
-                setTurnGunRightRadians(gunAdjust);
-                
-       // ???     
-       if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) 
-       {
-    	   m_waves.add(newWave);
-    	   fire(power);
-       }
-       
-		double radarTurn;
-		
-		 radarTurn = getHeadingRadians() + e.getBearingRadians()
-		    		- getRadarHeadingRadians();
-		 setTurnRadarRightRadians(2* Utils.normalRelativeAngle(radarTurn));
-	}
-*/
+
 
 
 }
