@@ -46,9 +46,9 @@ public class KNN {
 		DataPoint[] m_historyPoints = CoreData.m_guessFactors.keySet().toArray( new DataPoint[CoreData.m_guessFactors.keySet().size()]  );
 		
 		Integer indexAdded, index;
-		double minDistance;
+		double minDistance = 100;
 		int nrSimilarSituation = Math.min(m_similarSituations,m_historyPoints.length); //m_historyPoints.size());
-		System.out.println("Size of the history :  " + CoreData.m_guessFactors.size() + " " + CoreData.m_waves.size() + " " + nrSimilarSituation);
+	//	System.out.println("Size of the history :  " + CoreData.m_guessFactors.size() + " " + CoreData.m_waves.size() + " " + nrSimilarSituation);
 		
 		for(int i = 0; i < nrSimilarSituation; i++)
 		{
@@ -71,11 +71,14 @@ public class KNN {
 				
 				index++;
 			}
-			System.out.println("Distanta : " + minDistance);
+		//	System.out.println("Distanta : " + minDistance);
 			m_indexAlreadyAdded.add(indexAdded);
 			m_mostNearest.add(m_historyPoints[indexAdded]);
 		}
+		if(minDistance > 1)
+			return null;
 		
+		//System.out.println("Distanta : " + minDistance);
 		
 		return m_mostNearest.get(0);
 		

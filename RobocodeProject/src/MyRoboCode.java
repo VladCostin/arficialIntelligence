@@ -6,6 +6,7 @@ import Model.DataPoint;
 import robocode.AdvancedRobot;
 
 
+import robocode.RoundEndedEvent;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
@@ -44,7 +45,7 @@ public class MyRoboCode extends AdvancedRobot{
 		
 		initData();
 		initConstantsAboutGame();
-		
+		System.out.println("intra inca o data aici");
 		
 		while (true) {
 			turnRadarRight(Double.POSITIVE_INFINITY);
@@ -75,7 +76,13 @@ public class MyRoboCode extends AdvancedRobot{
 		setAdjustRadarForRobotTurn(true);
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		m_core = new CoreData();
+		
+		if(CoreData.m_value == null)
+			m_core = new CoreData();
+		else
+			System.out.println("NU ESTE NULL  null");
+		
+
 		m_kNearestNeigh = new KNN();
 	}
 
@@ -171,7 +178,7 @@ public class MyRoboCode extends AdvancedRobot{
 		{
 		
 			double guessFactor = CoreData.m_guessFactors.get(point);
-			System.out.println("FireGuesFactor" + guessFactor);
+		//	System.out.println("FireGuesFactor" + guessFactor);
 			
 			double angleOffset = m_direction * guessFactor * newWave.maxEscapeAngle();
             double gunAdjust = Utils.normalRelativeAngle(
@@ -183,10 +190,30 @@ public class MyRoboCode extends AdvancedRobot{
             }
 		}
 		
-		
+	
 	}
 
-
+	public void onRoundEnded(RoundEndedEvent event)
+	{
+		System.out.println("Size-ul este" + CoreData.m_guessFactors.size());
+		
+		ArrayList<DataPoint> deleteWaves = new ArrayList<DataPoint>();
+		int i;
+		if(m_kNearestNeigh.getM_MaxSize() < CoreData.m_guessFactors.size() )
+		{
+			i = 0;
+			for(DataPoint p : CoreData.m_guessFactors.keySet())
+			{
+				i++;
+				deleteWaves.add(p);
+				if(i > 2000)
+					break;
+			}
+			
+			for( i = 0; i < deleteWaves.size(); i++)
+				CoreData.m_guessFactors.remove(deleteWaves.get(i));
+		}
+	}
 
 
 

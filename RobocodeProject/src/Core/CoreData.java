@@ -45,11 +45,15 @@ public class CoreData {
 	 */
 	public static HashMap<DataPoint,Double> m_guessFactors;
 	
+	public static Boolean m_value;
+	
 	/**
 	 * 
 	 */
 	public CoreData()
 	{
+		m_value = true; 
+		
 		m_waves = new HashMap<WaveBullet,DataPoint>();
 		m_guessFactors = new HashMap<DataPoint, Double>();
 	}
